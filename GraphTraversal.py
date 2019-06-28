@@ -261,7 +261,8 @@ def SCC(G):
                    not in node_visited and v['color'] != 'WHITE']
 
             print('=> SCC:\n', SCC)
-
+            
+            # 添加已访问节点
             for x in SCC:
                 node_visited.add(x)
 
