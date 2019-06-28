@@ -38,10 +38,7 @@ def calc_G_transpose(G):
     """
     计算图的转置
     """
-    GT = {}
-
-    for key in G.keys():
-        GT[key] = set()
+    GT = {k: set() for k in G.keys()}
 
     for key, values in G.items():
         for value in values:
