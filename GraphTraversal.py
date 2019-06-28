@@ -240,8 +240,9 @@ def SCC(G):
 
     # --------------------- 主循环
     # 对原图node_set按照finish降序排序
-    node_set_ = sorted(
-        node_set.items(), key=lambda x: x[1]['finish'], reverse=True)
+    node_set_ = sorted(node_set.items(),
+                       key=lambda x: x[1]['finish'],
+                       reverse=True)
     node_name_sorted = [x[0] for x in node_set_]
 
     node_visited = set()
