@@ -94,7 +94,7 @@ def MST_Kruskal(G):
 
     def merge_tree(G_V, tree_1, tree_2):
         
-        # merge vertex_2 to tree_1
+        # merge tree_2 to tree_1
         for ele in tree_2['elements']:
             tree_1['elements'].add(ele)
         
