@@ -155,7 +155,7 @@ def MST_Kruskal(G):
             # 合并两棵树
             merge_tree(G_V, tree_1, tree_2)
 
-    # 对A排序输出
+    # 对A排序输出: 确保每次跑同样的图得到同样的结果
     A = sorted(A,
                key=lambda x: (x.split('_')[0], x.split('_')[1]),
                reverse=False)
