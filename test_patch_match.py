@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import math
 from sklearn.feature_extraction import image
 import time
-from patchmatch_code import *
+from PatchMatch import *
 
 # This function builds an image of patches. Given an image im_in, an
 # index idx characterizing a pixel position in im_in, a vector of
