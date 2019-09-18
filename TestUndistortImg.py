@@ -58,7 +58,7 @@ def test_img_undistortion():
     cx = 367.215
     cy = 248.375
 
-    img_path = 'C:/PyProjs/tests/origin.png'
+    img_path = './tests/distorted.png'
     img_orig = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 
     img_undistort = undistort(img_path,
