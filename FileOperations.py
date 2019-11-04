@@ -48,12 +48,41 @@ def RMFilesWithSuffix(root, suffix):
         os.remove(f)
 
 
+def GenerateFileList(root, suffix, list_name):
+	"""
+	生成指定后缀的文件名列表txt文件
+	"""
+	if not os.path.isdir(root):
+		print('[Err]: invalid root')
+		return
+
+	f_list = []
+	FindFileWithSuffix(root, suffix, f_list)
+
+	if len(f_list) == 0:
+		print('[Warning]: empty file list')
+		return
+	
+	with open(root + '/' + list_name, 'w', encoding='utf-8') as f_h:
+		for i, f_path in tqdm(enumerate(f_list)):
+			f_name = os.path.split(f_path)[1]
+			f_h.write(f_name)
+
+			if i != len(f_list) - 1:
+				f_h.write('\n')
+
+
 if __name__ == '__main__':
-    ChangeSuffix(root='d:/workspace/resultPro/depth_maps',
-                 src_suffix='bin.jpg',
-                 dst_suffix='_r14_th0.jpg')
+    # ChangeSuffix(root='f:/workspace/resultPro/depth_maps',
+    #              src_suffix='bin.jpg',
+    #              dst_suffix='_r14_th0.jpg')
 
     # RMFilesWithSuffix(root='d:/workspace/resultPro/depth_maps',
     # 				  suffix='_sigma_alpha_0_2_.jpg')
 
-    print('--Test done.\n')
+	GenerateFileList(root='f:/ETH3D/multi_view_training_dslr_undistorted/terrains',
+					 suffix='.JPG',
+					 list_name='bundler.out.list.txt')
+
+	print('--Test done.\n')
+	
