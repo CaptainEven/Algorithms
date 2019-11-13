@@ -8,6 +8,7 @@ cur_suffix=$3
 if [ $@ -ne 3 ]
 then
     echo "[Err]: wrong number of parameters."
+    exit 1
 fi
 
 for file in $root/*
