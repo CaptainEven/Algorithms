@@ -11,6 +11,18 @@ starttime = time.time()
 img1 = cv2.imread('./img_1.png')  # query
 img2 = cv2.imread('./img_2.png')  # train
 
+img1_rs = cv2.resize(img1,
+                     (int(img1.shape[1] * 0.4),
+                      int(img1.shape[0] * 0.4)),
+                     cv2.INTER_CUBIC)
+cv2.imshow("img1", img1_rs)
+
+img2_rs = cv2.resize(img2,
+                     (int(img1.shape[1] * 0.4),
+                      int(img1.shape[0] * 0.4)),
+                     cv2.INTER_CUBIC)
+cv2.imshow("img2", img2_rs)
+
 # img1gray=cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
 # img2gray=cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
 # surf = cv2.xfeatures2d.SURF_create(10000, nOctaves=4, extended=False, upright=True)
@@ -41,7 +53,7 @@ if len(good) > MIN:
     #                               np.linalg.inv(M),
     #                               (img1.shape[1] + img2.shape[1], img2.shape[0]))
 
-    # warp img2 to img1
+    # warp img2(left) to img1(right)
     M, mask = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
     warped_img2 = cv2.warpPerspective(img2,
                                       M,
@@ -50,12 +62,12 @@ if len(good) > MIN:
     direct = warped_img2.copy()
     direct[0:img1.shape[0], 0:img1.shape[1]] = img1
 
-    # warped_img2_rs = cv2.resize(warped_img2,
-    #                             (int(warped_img2.shape[1] * 0.4),
-    #                              int(warped_img2.shape[0] * 0.4)),
-    #                             cv2.INTER_CUBIC)
-    # cv2.imshow("Warped img2", warped_img2_rs)
-    # cv2.waitKey()
+    warped_img2_rs = cv2.resize(warped_img2,
+                                (int(warped_img2.shape[1] * 0.4),
+                                 int(warped_img2.shape[0] * 0.4)),
+                                cv2.INTER_CUBIC)
+    cv2.imshow("Warped img2", warped_img2_rs)
+    cv2.waitKey()
 
     simple = time.time()
 
@@ -70,26 +82,25 @@ if len(good) > MIN:
         if img1[:, x].any() and warped_img2[:, x].any():  # 开始重叠的最左端
             left = x
             break
-        
+
     for x in range(cols-1, 0, -1):
         if img1[:, x].any() and warped_img2[:, x].any():  # 重叠的最右一列
             right = x
             break
 
-    # blending img1 and warped_img2
+    # stiching img1 and warped_img2
     res = np.zeros([rows, cols, 3], np.uint8)
     for y in range(rows):
         for x in range(cols):
-            if not img1[y, x].any():  # 如果没有原图, 用warped的填充
+            if not img1[y, x].any():  # 如果没有原图, 用warp的填充
                 res[y, x] = warped_img2[y, x]
             elif not warped_img2[y, x].any():
                 res[y, x] = img1[y, x]
-            else:
+            else:  # 两者都存在的区域
                 srcImgLen = float(abs(x - left))
                 testImgLen = float(abs(x - right))
                 alpha = srcImgLen / (srcImgLen + testImgLen)
-                pixel = img1[y, x] * \
-                    (1-alpha) + warped_img2[y, x] * alpha
+                pixel = img1[y, x] * (1.0 - alpha) + warped_img2[y, x] * alpha
                 res[y, x] = np.clip(pixel, 0, 255)
 
     # put blending result back
