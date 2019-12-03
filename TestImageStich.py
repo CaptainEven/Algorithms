@@ -51,8 +51,8 @@ if len(good) > MIN:
     direct[0:img1.shape[0], 0:img1.shape[1]] = img1
 
     # warped_img2_rs = cv2.resize(warped_img2,
-    #                             (int(warped_img2.shape[1] * 0.3),
-    #                              int(warped_img2.shape[0] * 0.3)),
+    #                             (int(warped_img2.shape[1] * 0.4),
+    #                              int(warped_img2.shape[0] * 0.4)),
     #                             cv2.INTER_CUBIC)
     # cv2.imshow("Warped img2", warped_img2_rs)
     # cv2.waitKey()
@@ -80,7 +80,7 @@ if len(good) > MIN:
     res = np.zeros([rows, cols, 3], np.uint8)
     for y in range(rows):
         for x in range(cols):
-            if not img1[y, x].any():  # 如果没有原图, 用旋转的填充
+            if not img1[y, x].any():  # 如果没有原图, 用warped的填充
                 res[y, x] = warped_img2[y, x]
             elif not warped_img2[y, x].any():
                 res[y, x] = img1[y, x]
