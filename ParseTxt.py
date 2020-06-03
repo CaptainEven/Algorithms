@@ -2,6 +2,8 @@
 
 import os
 import shutil
+import re
+import cv2
 from collections import defaultdict
 
 
@@ -15,13 +17,22 @@ classes = [
     'tricycle'       # 5
 ]  # 暂时先分为6类(包括背景)
 
-cls_dict = {
+cls2id = {
     'background': 0,
     'car': 1,
     'bicycle': 2,
     'person': 3,
     'cyclist': 4,
     'tricycle': 5
+}
+
+id2cls = {
+    0: 'background',
+    1: 'car',
+    2: 'bicycle',
+    3: 'person',
+    4: 'cyclist',
+    5: 'tricycle'
 }
 
 # 图片数据的宽高
@@ -44,14 +55,14 @@ def dark_label2mcmot_label(data_root, viz_root=None):
         print('[Err]: invalid image root')
 
     # 创建标签文件根目录
-    label_root = data_root + '/labels'
+    label_root = data_root + '/labels_with_ids'
     if not os.path.isdir(label_root):
         os.makedirs(label_root)
     else:
         shutil.rmtree(label_root)
         os.makedirs(label_root)
 
-    # 为视频seq的每个检测类别设置起始track id
+    # 为视频seq的每个检测类别设置[起始]track id
     start_id_dict = defaultdict(int)  # str => int
     for class_type in classes:
         start_id_dict[class_type] = 0
@@ -61,8 +72,8 @@ def dark_label2mcmot_label(data_root, viz_root=None):
 
     # 遍历每一段视频seq
     for seq_name in os.listdir(img_root):
-        img_dir = img_root + '/' + seq_name
-        print('\nProcessing seq', img_dir)
+        seq_dir = img_root + '/' + seq_name
+        print('\nProcessing seq', seq_dir)
 
         # 为该视频seq创建label目录
         seq_label_dir = label_root + '/' + seq_name
@@ -72,7 +83,7 @@ def dark_label2mcmot_label(data_root, viz_root=None):
             shutil.rmtree(seq_label_dir)
             os.makedirs(seq_label_dir)
 
-        dark_txt_path = img_dir + '/' + seq_name + '_gt.txt'
+        dark_txt_path = seq_dir + '/' + seq_name + '_gt.txt'
         if not os.path.isfile(dark_txt_path):
             print('[Warning]: invalid dark label file.')
             continue
@@ -89,7 +100,7 @@ def dark_label2mcmot_label(data_root, viz_root=None):
                 line = line.split(',')
                 f_id = int(line[0])
                 n_objs = int(line[1])
-                print('\nFrame {:d} in seq {}, total {:d} objects'.format(f_id + 1, seq_name, n_objs))
+                # print('\nFrame {:d} in seq {}, total {:d} objects'.format(f_id + 1, seq_name, n_objs))
                 
                 # 存储该帧所有的检测目标label信息
                 fr_label_objs = []
@@ -97,7 +108,7 @@ def dark_label2mcmot_label(data_root, viz_root=None):
                 # 遍历该帧的每一个object
                 for cur in range(2, len(line), 6):  # cursor
                     class_type = line[cur + 5].strip()
-                    class_id = cls_dict[class_type]  # class type => class id
+                    class_id = cls2id[class_type]  # class type => class id
 
                     # 解析track id
                     track_id = int(line[cur]) + 1  # track_id从1开始统计
@@ -136,6 +147,8 @@ def dark_label2mcmot_label(data_root, viz_root=None):
 
                     # 打印中间结果, 验证是否解析正确...
                     print(track_id, x1, y1, x2, y2, class_type)
+                    # if 14 == track_id:
+                    #     print('pause here')
 
                     # 每一帧对应的label中的每一行
                     obj_str = '{:d} {:d} {:.6f} {:.6f} {:.6f} {:.6f}\n'.format(
@@ -169,23 +182,63 @@ def dark_label2mcmot_label(data_root, viz_root=None):
         print(k + ' total ' + str(v) + ' track ids')
 
 
-def gen_dot_train(data_root):
+# DarkLabel格式转换代码
+def cvt_dl_format(lb_f_path):
     """
-    为数据生成.train文件
+    将dark label从一种格式转换成我们认为的标准格式
     """
-    if not os.path.isdir(data_root):
-        print('[Err]: invalid data root')
+    if not os.path.isfile(lb_f_path):
+        print('[Err]: invalid label file.')
         return
 
-    image_root = data_root + '/images'
-    label_root = data_root + '/labels'
-    if not (os.path.isdir(image_root) and) os.path.isdir(label_root)):
-        print('[Err]: invalid image root or label root')
-        return
-    
-    # 遍历每一个
+    lb_path = os.path.split(lb_f_path)
+    out_f_path = lb_path[0] + '/' + lb_path[1].split('.')[0] + '_cvt.txt'
+    with open(out_f_path, 'w', encoding='utf-8') as w_h:
+        with open(lb_f_path, 'r', encoding='utf-8') as r_h:
+            for line in r_h.readlines():
+                line = line.strip().split(',')
+                f_id = line[0]
+                n_objs = int(line[1])
+
+                # 遍历这一帧的检测目标
+                objs = []
+                for cur in range(2, len(line), 5):
+                    x1 = int(line[cur + 0])  # 猜测到底是第一个点(left up)还是中心点
+                    y1 = int(line[cur + 1])
+                    w  = int(line[cur + 2])
+                    h  = int(line[cur + 3])
+                    cls_id = str(line[cur + 4])
+
+                    # img_path = 'f:/seq_data/images/mcmot_seq2_imgs/00000.jpg'
+                    # img = cv2.imread(img_path)
+                    # cv2.rectangle(img, (x1, y1), (x1+w, y1+h), [0, 255, 255])
+                    # cv2.imshow('Test', img)
+                    # cv2.waitKey()
+
+                    # 正则表达式匹配
+                    match = re.match('([a-zA-Z]+)([0-9]+)', cls_id).groups()
+                    cls_name, track_id = match[0], match[1]
+                    obj = [track_id, str(x1), str(y1), str(x1+w), str(y1+h), cls_name]
+                    objs.append(obj)
+                # print(objs)
+
+                assert(len(objs) == n_objs)
+
+                line_out = f_id + ',' + str(n_objs) + ','
+                for obj in objs:
+                    obj_str = ','.join(obj) + ','
+                    line_out = line_out + obj_str
+                
+                line_out = line_out[:-1]
+                w_h.write(line_out + '\n')
+                print('frame {:d} done'.format(int(f_id)))
+
+
+
 
 
 if __name__ == '__main__':
     dark_label2mcmot_label(data_root='f:/seq_data', viz_root=None)
+    # cvt_dl_format(lb_f_path='f:/seq_data/images/mcmot_seq2_imgs_gt.txt')
+
     print('\nDone.')
